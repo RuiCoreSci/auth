@@ -18,7 +18,7 @@ class AuthUser(BaseModel):
 
     @property
     def is_authenticated(self) -> bool:
-        return True
+        return self.user_id is not None
 
     @property
     def display_id(self) -> int:

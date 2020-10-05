@@ -24,13 +24,14 @@ class Authorize:
         return token
 
     @staticmethod
-    async def revoke(token: str):
+    async def revoke(token: str) -> bool:
         try:
             payload = Token.decode(token)
         except:  # noqa
             pass
         else:
             await redis.execute("DEL", f"{payload.id}-{token}")
+        return True
 
     @staticmethod
     async def revoke_all(user: User):

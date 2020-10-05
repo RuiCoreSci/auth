@@ -15,10 +15,7 @@ from validations import CreateUser
 async def register(*_, create: dict = None) -> User:
     create_user = CreateUser(**create)
     create_user.password = Password.encode(create_user.password)
-    user = User(**create_user.dict())
-    session.add(user)
-    session.commit()
-    return user
+    return User.create(**create_user.dict())
 
 
 @query.field("login")
@@ -36,8 +33,7 @@ async def login(_, info: GraphQLResolveInfo, id: int, password: str) -> str:
 @login_required
 async def logout(_, info: GraphQLResolveInfo, id: int) -> bool:
     token = info.context["request"].headers[JWT_AUTH_HEADER]
-    await Authorize.revoke(token)
-    return True
+    return await Authorize.revoke(token)
 
 
 @query.field("user")
