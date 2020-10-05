@@ -8,12 +8,19 @@ from validations import User
 
 class Authorize:
     @staticmethod
-    async def authorize(user: User, device: str = "pc") -> str:
+    async def authorize(user: User, device: str = "pc", auto_delete=True) -> str:
+        """
+        :param user:
+        :param device:
+        :param auto_delete: 过期是否自动删除，默认为 True
+        :return:
+        """
         exp = datetime.utcnow() + timedelta(seconds=JWT_LIFE_SPAN)
         token = Token.encode(user, exp=exp, device=device)
-        expire_at = (exp + timedelta(seconds=JWT_LIFE_SPAN)).timestamp()
         await redis.execute("SET", f"{user.id}-{token}", "True")
-        await redis.execute("EXPIREAT", f"{user.id}-{token}", int(expire_at))
+        if auto_delete:
+            expire_at = (exp + timedelta(seconds=JWT_LIFE_SPAN)).timestamp()
+            await redis.execute("EXPIREAT", f"{user.id}-{token}", int(expire_at))
         return token
 
     @staticmethod

@@ -7,7 +7,7 @@ from authority.password import Password
 from orm import User
 from orm.base import session
 from resolvers.base import mutation, query
-from settings import JWT_AUTH_HEADER
+from settings import DEVICE_HEADER, JWT_AUTH_HEADER
 from validations import CreateUser
 
 
@@ -22,9 +22,14 @@ async def register(*_, create: dict = None) -> User:
 
 
 @query.field("login")
-async def login(*_, id: int, password: str) -> str:
+async def login(_, info: GraphQLResolveInfo, id: int, password: str) -> str:
+    try:
+        device = info.context["request"].headers[DEVICE_HEADER]
+    except KeyError:
+        device = "pc"
+    auto_delete = False if device == "mobile" else True
     user = Identity.identity(user_id=id, password=password)
-    return await Authorize.authorize(user)
+    return await Authorize.authorize(user, device=device, auto_delete=auto_delete)
 
 
 @query.field("logout")

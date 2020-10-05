@@ -7,4 +7,4 @@ freeze:
 pip-install:
 	pip install -r requirements.txt
 pip-uninstall:
-	pip uninstall -r<(pip freeze) -y
+	pip freeze | xargs pip uninstall -y

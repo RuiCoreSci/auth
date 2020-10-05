@@ -16,6 +16,7 @@ class PayLoad(BaseModel):
     id: int
     device: Text
     exp: datetime
+    iat: datetime
 
 
 class CreateUser(BaseModel):

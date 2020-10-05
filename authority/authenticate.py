@@ -2,7 +2,7 @@ from functools import wraps
 from typing import Optional, Tuple
 
 from graphql import GraphQLResolveInfo
-from jwt import DecodeError, ExpiredSignatureError, InvalidSignatureError, InvalidTokenError
+from jwt import DecodeError, ExpiredSignatureError
 from starlette.authentication import AuthenticationBackend
 from starlette.requests import HTTPConnection
 
@@ -14,23 +14,33 @@ from settings import JWT_AUTH_HEADER
 
 
 class _Authenticate:
-    @staticmethod
-    async def verify(token: str):
+    @classmethod
+    async def verify(cls, token: str):
+        """
+        token 有效的规则：
+        1、token 格式合法 && token 在 redis 数据库中存在 && token 没有过有效期 or
+        2、token 格式合法 && token 在 redis 数据库中存在 && token 过期 && token 为指定类型
+        """
         try:
             payload = Token.decode(token)
-        except (InvalidSignatureError, InvalidTokenError, DecodeError) as e:
-            raise InvalidToken("token 格式错误") from e
         except ExpiredSignatureError:
+            payload = Token.decode(token, verify_exp=False)
+            if not await cls.exists(payload.id, token):
+                raise InvalidToken("登陆过期,请重新登陆")
             if payload.device == "mobile":  # noqa
                 "we cat set mobile token to be valid forever"
                 return payload
-            else:
-                raise InvalidToken("登陆过期,请重新登陆")
+        except DecodeError as e:
+            raise InvalidToken("token 格式错误") from e
         else:
-            token = await redis.execute("GET", f"{payload.id}-{token}")
-            if token is None:
+            if not await cls.exists(payload.id, token):
                 raise InvalidToken("登陆过期,请重新登陆")
             return payload
+
+    @classmethod
+    async def exists(cls, user_id, token):
+        token = await redis.execute("GET", f"{user_id}-{token}")
+        return token is not None
 
 
 class StarAuthenticate(AuthenticationBackend):
@@ -57,7 +67,7 @@ def login_required(func):
     async def wrap(parent, info: GraphQLResolveInfo, *args, **kwargs):
         auth: AuthCredentials = info.context["request"].auth
         if not auth.logged_in:
-            raise OperationNotAllowed(auth.error_message)
+            raise OperationNotAllowed(auth.error_message or "请登录")
         return await func(parent, info, *args, **kwargs)
 
     return wrap
