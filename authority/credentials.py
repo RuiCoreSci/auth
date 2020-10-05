@@ -1,9 +1,14 @@
-from typing import Optional
+from typing import List, Optional, Text
 
 from pydantic import BaseModel
 
 
+class Permission(BaseModel):
+    name: Text
+
+
 class AuthCredentials(BaseModel):
+    user_id: Optional[int] = None
     scopes: Optional[list] = []
     logged_in: bool = False
     error_message: str = ""
@@ -11,6 +16,10 @@ class AuthCredentials(BaseModel):
     @property
     def is_admin(self):
         return True
+
+    async def permissions(self) -> List[Permission]:
+        assert self.user_id is not None, "请先登录"
+        return NotImplemented()
 
 
 class AuthUser(BaseModel):
