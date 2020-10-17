@@ -3,9 +3,11 @@ from typing import Optional
 import aioredis
 from aioredis import ConnectionsPool
 
+from settings import REDIS_URL
+
 
 class Redis:
-    def __init__(self, uri="redis://localhost"):
+    def __init__(self, uri=REDIS_URL):
         self._uri: str = uri
         self._pool: Optional[ConnectionsPool] = None
 
