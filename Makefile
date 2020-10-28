@@ -1,19 +1,19 @@
-pip-up:
+up-pip:
 	pip install --upgrade pip
 
 freeze:
 	pip freeze>requirements.txt
 
-pip-install:
+install-pkg:
 	pip install -r requirements.txt
 
-pip-uninstall:
+uninstall-pkg:
 	pip freeze | xargs pip uninstall -y
 
-up:
+server-up:
 	docker-compose up -d --remove-orphans
 	docker-compose ps
 
-down:
+server-down:
 	docker-compose down
 	docker-compose ps
