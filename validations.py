@@ -13,7 +13,7 @@ class User(BaseModel):
 
 
 class PayLoad(BaseModel):
-    id: int
+    user_id: int
     device: Text
     exp: datetime
     iat: datetime

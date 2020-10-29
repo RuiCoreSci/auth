@@ -1,14 +1,14 @@
 from authority.password import Password
 from exceptions import InvalidPassword, ObjectNotExist
 from orm import User as OrmUser
-from orm.base import session
+from orm.base import global_session
 from validations import User
 
 
 class Identity:
     @staticmethod
     def identity(user_id: int, password: str) -> User:
-        user = session.query(OrmUser).filter_by(id=user_id).first()
+        user = global_session.query(OrmUser).filter_by(id=user_id).first()
         if not user:
             raise ObjectNotExist("用户不存在")
         user = User(**user.dict())

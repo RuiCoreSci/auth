@@ -5,7 +5,7 @@ from authority.authorize import Authorize
 from authority.identity import Identity
 from authority.password import Password
 from orm import User
-from orm.base import session
+from orm.base import global_session
 from resolvers.base import mutation, query
 from settings import DEVICE_HEADER, JWT_AUTH_HEADER
 from validations import CreateUser
@@ -39,4 +39,4 @@ async def logout(_, info: GraphQLResolveInfo, id: int) -> bool:
 @query.field("user")
 @login_required
 async def get_user(*_, id: int):
-    return session.query(User).filter(User.id == id).first()
+    return global_session.query(User).filter(User.id == id).first()

@@ -9,6 +9,7 @@ from starlette.requests import HTTPConnection
 from authority.credentials import AuthCredentials, AuthUser
 from authority.token import Token
 from exceptions import InvalidToken, OperationNotAllowed
+from orm import User
 from redis import redis
 from settings import JWT_AUTH_HEADER
 
@@ -25,7 +26,7 @@ class _Authenticate:
             payload = Token.decode(token)
         except ExpiredSignatureError:
             payload = Token.decode(token, verify_exp=False)
-            if not await cls.exists(payload.id, token):
+            if not await cls.exists(payload.user_id, token):
                 raise InvalidToken("登陆过期,请重新登陆")
             if payload.device == "mobile":  # noqa
                 "we cat set mobile token to be valid forever"
@@ -33,7 +34,7 @@ class _Authenticate:
         except DecodeError as e:
             raise InvalidToken("token 格式错误") from e
         else:
-            if not await cls.exists(payload.id, token):
+            if not await cls.exists(payload.user_id, token):
                 raise InvalidToken("登陆过期,请重新登陆")
             return payload
 
@@ -45,7 +46,7 @@ class _Authenticate:
 
 class StarAuthenticate(AuthenticationBackend):
     async def authenticate(
-        self, request: HTTPConnection
+            self, request: HTTPConnection
     ) -> Optional[Tuple[AuthCredentials, AuthUser]]:
         if JWT_AUTH_HEADER not in request.headers:
             return AuthCredentials(scopes=[]), AuthUser(user_id=None)
@@ -53,13 +54,12 @@ class StarAuthenticate(AuthenticationBackend):
         auth = request.headers[JWT_AUTH_HEADER]
         try:
             scheme, token = auth.split()
-            if scheme.lower() != 'token':
-                return
             payload = await _Authenticate.verify(token)
         except Exception as exc:
             return AuthCredentials(scopes=[], error_message=str(exc)), AuthUser(user_id=None)
 
-        return AuthCredentials(scopes=[], logged_in=True), AuthUser(user_id=payload.id)
+        scopes = User.get_permission(user_id=payload.user_id)
+        return AuthCredentials(scopes=scopes, logged_in=True), AuthUser(user_id=payload.user_id)
 
 
 def login_required(func):
